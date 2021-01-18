@@ -34,19 +34,19 @@ func (*UserService) AddUser(ctx context.Context, req *pb.User) (*pb.User, error)
 // 	AddUserVerbose(ctx context.Context, in *User, opts ...grpc.CallOption) (UserService_AddUserVerboseClient, error)
 // }
 func (*UserService) AddUserVerbose(req *pb.User, res pb.UserService_AddUserVerboseServer) error {
-	res.Send(&pb.UserResultStreamUser{
+	res.Send(&pb.UserResultStream{
 		Status: "Init",
 		User:   &pb.User{},
 	})
 	time.Sleep(time.Second * 3)
 
-	res.Send(&pb.UserResultStreamUser{
+	res.Send(&pb.UserResultStream{
 		Status: "Creating",
 		User:   &pb.User{},
 	})
 	time.Sleep(time.Second * 3)
 
-	res.Send(&pb.UserResultStreamUser{
+	res.Send(&pb.UserResultStream{
 		Status: "User has been created",
 		User: &pb.User{
 			Id:    "1234",
@@ -56,7 +56,7 @@ func (*UserService) AddUserVerbose(req *pb.User, res pb.UserService_AddUserVerbo
 	})
 	time.Sleep(time.Second * 3)
 
-	res.Send(&pb.UserResultStreamUser{
+	res.Send(&pb.UserResultStream{
 		Status: "Completed",
 		User: &pb.User{
 			Id:    "1234",
