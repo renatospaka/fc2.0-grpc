@@ -21,7 +21,8 @@ func main() {
 	client := pb.NewUserServiceClient(connection)
 	// AddUser(client)
 	// AddUserVerbose(client)
-	AddUsers(client)
+	//AddUsers(client)
+	AddUsersStreamBoth(client)
 }
 
 func AddUser(client pb.UserServiceClient) {
@@ -102,4 +103,65 @@ func AddUsers(client pb.UserServiceClient) {
 	}
 
 	fmt.Println(res)
+}
+
+func AddUsersStreamBoth(client pb.UserServiceClient) {
+	stream, err := client.AddUsersStreamBoth(context.Background())
+	if err != nil {
+		log.Fatalf("Error creating request: %v", err)
+	}
+
+	reqs := []*pb.User{
+		&pb.User{
+			Id: "w1", Name: "Wesley", Email: "wes@wes.com",
+		},
+		&pb.User{
+			Id: "r1", Name: "Renato", Email: "renato@email.com",
+		},
+		&pb.User{
+			Id: "ro1", Name: "Rochinha", Email: "rochinha@sorvetes.com.br",
+		},
+		&pb.User{
+			Id: "w2", Name: "Wesley 2", Email: "wes2@wes.com",
+		},
+		&pb.User{
+			Id: "r2", Name: "Renato 2", Email: "renato2@email.com",
+		},
+		&pb.User{
+			Id: "ro2", Name: "Rochinha 2", Email: "rochinha2@sorvetes.com.br",
+		},
+	}
+
+	wait := make(chan int)
+
+	// anonymous function runs as an asynchronous thread (similar but not as one) - SENDING
+	go func() {
+		for _, req := range reqs {
+			fmt.Println("Sending user: ", req.Name)
+			stream.Send(req)
+			time.Sleep(time.Second * 2)
+		}
+
+		stream.CloseSend()
+	}()
+
+	// anonymous function runs as an asynchronous thread (similar but not as one) - RECEIVING
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Fatalf("Error receiving data from server: %v", err)
+				break
+			}
+
+			fmt.Printf("Receiving user %v with status: %v\n", res.GetUser().GetName(), res.GetStatus())
+		}
+
+		close(wait)
+	}()
+
+	<- wait
 }
