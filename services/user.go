@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"time"
 
 	"github.com/renatospaka/fc2.0-grpc/pb"
@@ -16,10 +18,7 @@ func NewUserService() *UserService {
 	return &UserService{}
 }
 
-// type UserServiceServer interface {
 // 	AddUser(context.Context, *User) (*User, error)
-// 	mustEmbedUnimplementedUserServiceServer()
-// }
 func (*UserService) AddUser(ctx context.Context, req *pb.User) (*pb.User, error) {
 	fmt.Println(req.Name)
 	return &pb.User{
@@ -29,10 +28,7 @@ func (*UserService) AddUser(ctx context.Context, req *pb.User) (*pb.User, error)
 	}, nil
 }
 
-// type UserServiceClient interface {
-// 	AddUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*User, error)
 // 	AddUserVerbose(ctx context.Context, in *User, opts ...grpc.CallOption) (UserService_AddUserVerboseClient, error)
-// }
 func (*UserService) AddUserVerbose(req *pb.User, res pb.UserService_AddUserVerboseServer) error {
 	res.Send(&pb.UserResultStream{
 		Status: "Init",
@@ -67,4 +63,29 @@ func (*UserService) AddUserVerbose(req *pb.User, res pb.UserService_AddUserVerbo
 	time.Sleep(time.Second * 3)
 
 	return nil
+}
+
+// AddUsers(ctx context.Context, opts ...grpc.CallOption) (UserService_AddUsersClient, error)
+func (*UserService) AddUsers(stream pb.UserService_AddUsersServer) error {
+	users := []*pb.User{}
+
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&pb.Users{
+				User: users,
+			})
+		}
+
+		if err != nil {
+			log.Fatalf("Error receiving stream: %v", err)
+		}
+
+		users = append(users, &pb.User{
+			Id:    req.GetId(),
+			Name:  req.GetName(),
+			Email: req.GetEmail(),
+		})
+		fmt.Println("Adding ", req.GetName())
+	}
 }
